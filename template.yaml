@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Cognito to API Gateway HTTPAPI (JWT)
+
+Resources:
+  MyHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Description: Cognito to HTTP API demo
+      Auth:
+        DefaultAuthorizer: JWTTokenExample
+        Authorizers:
+          JWTTokenExample: 
+            JwtConfiguration:
+              issuer: "https://dev-mea6r8vh.us.auth0.com/"
+              audience: "https://auth0-jwt-authorizer"
+            IdentitySource: "$request.header.Authorization"  
+
+  PostFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: src/
+      Handler: post.handler
+      Runtime: python3.8
+      Timeout: 180
+      Events:
+        AppApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /
+            Method: post
+
+  GetFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: src/
+      Handler: get.handler
+      Runtime: python3.8
+      Timeout: 180
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /
+            Method: get
+
+# Outputs:
+#   AppApiEndpoint:
+#     Description: API Endpoint
+#     Value: 
+#       Fn::Sub: "https://${MyHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+#   AppApiId:
+#     Description: Api id of HttpApi
+#     Value:
+#       Ref: MyHttpApi
